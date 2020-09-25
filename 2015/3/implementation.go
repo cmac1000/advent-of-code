@@ -11,35 +11,92 @@ type Point struct {
 	y int
 }
 
-func partOne() {
-	pointsVisited := make(map[Point]int)
-	origin := Point{x: 0, y: 0}
-	pointsVisited[origin] = 1
-	var location = origin
+type santaState struct {
+	location      Point
+	pointsVisited map[Point]int
+}
+
+func (state *santaState) move(instruction string) Point {
 	var destination Point
-	for _, c := range INPUT {
-		switch instruction := string(c); instruction {
-		case "<":
-			destination = Point{x: location.x - 1, y: location.y}
-		case ">":
-			destination = Point{x: location.x + 1, y: location.y}
-		case "v":
-			destination = Point{x: location.x, y: location.y - 1}
-		case "^":
-			destination = Point{x: location.x, y: location.y + 1}
-		default:
-			panic(fmt.Errorf("unknown instruction %v", instruction))
-		}
-		if visitCount, ok := pointsVisited[destination]; ok {
-			pointsVisited[destination] = visitCount + 1
-		} else {
-			pointsVisited[destination] = 1
-		}
-		location = destination
+	switch instruction {
+	case "<":
+		destination = Point{x: state.location.x - 1, y: state.location.y}
+	case ">":
+		destination = Point{x: state.location.x + 1, y: state.location.y}
+	case "v":
+		destination = Point{x: state.location.x, y: state.location.y - 1}
+	case "^":
+		destination = Point{x: state.location.x, y: state.location.y + 1}
+	default:
+		panic(fmt.Errorf("unknown instruction %v", instruction))
 	}
-	fmt.Println(len(pointsVisited))
+	if visitCount, ok := state.pointsVisited[destination]; ok {
+		state.pointsVisited[destination] = visitCount + 1
+	} else {
+		state.pointsVisited[destination] = 1
+	}
+	state.location = destination
+	return destination
+}
+
+func newSantaState() santaState {
+	origin := Point{x: 0, y: 0}
+	return santaState{
+		location: origin,
+		pointsVisited: map[Point]int{
+			origin: 1,
+		},
+	}
+}
+
+func partOne() {
+	state := newSantaState()
+	for _, c := range INPUT {
+		state.move(string(c))
+	}
+	fmt.Println(len(state.pointsVisited))
+}
+
+func combinePointsVisited(pointsVisitedMaps []map[Point]int) map[Point]int {
+	output := make(map[Point]int)
+	for _, input := range pointsVisitedMaps {
+		for point, visits := range input {
+			if visitCount, ok := output[point]; ok {
+				output[point] = visitCount + visits
+			} else {
+				output[point] = visits
+			}
+		}
+	}
+	return output
+
+}
+
+func partTwo() {
+	states := [2]santaState{
+		newSantaState(),
+		newSantaState(),
+	}
+
+	nextDeliverer := 0
+	for _, c := range INPUT {
+		states[nextDeliverer].move(string(c))
+		if nextDeliverer+1 == len(states) {
+			nextDeliverer = 0
+		} else {
+			nextDeliverer = nextDeliverer + 1
+		}
+	}
+	var pointsVisited []map[Point]int
+	for _, state := range states {
+		pointsVisited = append(pointsVisited, state.pointsVisited)
+	}
+	combinedPointsVisited := combinePointsVisited(pointsVisited)
+	fmt.Println(len(combinedPointsVisited))
+
 }
 
 func main() {
-	partOne()
+	// partOne()
+	partTwo()
 }
